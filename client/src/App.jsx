@@ -8,22 +8,23 @@ import Home from "./components/Home/Home"
 import MyActivity from "./components/MyActivity/MyActivity"
 
 function App() {
+   const user = localStorage.getItem("token");
   return (
-    <>
+  <div className="App">
     <BrowserRouter>
     <Routes>
       <Route path="/" element={<Landing/>} />
       <Route path="/login" element={<Login/>} />
       <Route path="/register" element={<Register/>} />
 
-      <Route path="/home" element={<Home/>} />
-       <Route path="/myactivity" element={<MyActivity/>} />
+    {user &&   <Route path="/home" element={<Home/>} />}
+       {user &&  <Route path="/myactivity" element={<MyActivity/>} />}
    
     </Routes>
     </BrowserRouter>
      
       
-    </>
+    </div>
   )
 }
 
