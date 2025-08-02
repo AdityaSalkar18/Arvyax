@@ -1,48 +1,201 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../Navbar/Navbar";
 import { Link } from "react-router-dom";
+import { IoMdAdd } from "react-icons/io";
+import { MdOutlineEdit } from "react-icons/md";
 
 const MyActivity = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    tag: "",
+    sessionFile: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData({ ...formData, [name]: files ? files[0] : value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const url = "http://localhost:8080/api/session/my-sessions/save-draft";
+      const formDataToSend = new FormData();
+
+      Object.keys(formData).forEach((key) => {
+        formDataToSend.append(key, formData[key]);
+      });
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      alert("Session Added Successfully");
+    } catch (error) {
+      console.error("Error Session adding ", error);
+      alert("Fialed to add Session");
+    }
+  };
+
+  const [sessions, setSessions] = useState([]);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:8080/api/session/my-sessions",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setSessions(data);
+      } catch (error) {
+        console.error("Error fetching sessions:", error);
+      }
+    };
+
+    fetchSessions();
+  }, []);
+
+  const [isOpenUpdate, setIsOpenUpdate] = useState(false);
+
+  const openModalUpdate = () => setIsOpenUpdate(true);
+
+  const closeModalUpdate = () => setIsOpenUpdate(false);
+
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+
+  const [formDataUpdate, setFormDataUpdate] = useState({
+    title: "",
+    tag: "",
+
+    sessionFile: "",
+  });
+
+  const handleChangesUpdate = (e) => {
+    const { name, value, files } = e.target;
+    setFormDataUpdate({ ...formDataUpdate, [name]: files ? files[0] : value });
+  };
+
+  const handleSubmitUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const url = `http://localhost:8080/api/session/my-sessions/${currentSessionId}`;
+      const formDataToSend = new FormData();
+      Object.entries(formDataUpdate).forEach(([key, vlaue]) => {
+        formDataToSend.append(key, vlaue);
+      });
+
+      const response = await fetch(url, {
+        method: "PATCH",
+         headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const sessionsList = sessions.map((session) =>
+        sessions._id === currentSessionId
+          ? {
+              ...session,
+              title: formDataUpdate.title,
+              tag: formDataUpdate.tag,
+
+              sessionFile: formDataUpdate.sessionFile,
+            }
+          : session
+      );
+      setSessions(sessionsList);
+      alert("Session updated Successfully")
+    } catch (error) {
+      console.error("Error to Update Property ", error);
+      alert("Error update session")
+    }
+  };
   return (
     <>
-    <Navbar/>
+      <Navbar />
       <div className="coantianer mx-auto px-4 py-8 ">
         <h2 class="text-4xl font-bold text-gray-700 text-center">My Session</h2>
-         <h4 class="text-xl p-4 font-semibold  text-center"> <Link
-          to="#"
-          onClick={openModal}
-          className="text-center block py-2 px-3 md:p-0 text-gray-500 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-[#349e7a]"
-        >
-          + Add Session
-        </Link></h4>
-       
-        <div class="max-w-sm bg-white border border-gray-200 rounded-lg shadow-sm ">
-          <img
-            class="rounded-t-lg"
-            src="https://png.pngtree.com/thumb_back/fh260/background/20250512/pngtree-a-woman-sits-cross-legged-on-cushion-in-serene-forest-surrounded-image_17277214.jpg"
-            alt=""
-          />
+        <h4 className="text-xl font-semibold text-center my-4">
+          <Link
+            to="#"
+            onClick={openModal}
+            className="inline-flex items-center gap-2 text-gray-500 hover:text-[#349e7a]"
+          >
+            <IoMdAdd className="text-2xl" />
+            Add Session
+          </Link>
+        </h4>
 
-          <div class="p-5">
-            <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-700 ">
-              Noteworthy technology acquisitions 2021
-            </h5>
-
-            <p class="mb-3 font-normal text-gray-500 ">
-              Here are the biggest enterprise technology acquisitions of 2021 so
-              far, in reverse chronological order.
-            </p>
-            {/* <a
-              href="#"
-              class="inline-flex items-center px-3 py-2 text-md font-medium text-center text-white bg-[#349e7a] hover:bg-[#349e7a] rounded-lg   "
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {sessions.map((session) => (
+            <div
+              key={session._id}
+              className="max-w-sm bg-white border border-gray-200 rounded-lg shadow-sm"
             >
-              View
-            </a> */}
-          </div>
+              <img
+                className="rounded-t-lg w-full h-48 object-cover"
+                src="https://png.pngtree.com/thumb_back/fh260/background/20250512/pngtree-a-woman-sits-cross-legged-on-cushion-in-serene-forest-surrounded-image_17277214.jpg"
+                alt={session.title || "Session"}
+              />
+
+              <div className="p-5">
+                <h5 className="mb-2 text-2xl font-bold tracking-tight text-gray-700">
+                  {session.title || "Untitled Session"}
+                </h5>
+                <p className="mb-3 font-normal text-gray-500">
+                  {session.tag || "No tag provided."}
+                </p>
+                <h4 className="text-right mt-4">
+                  <Link
+                    to="#"
+                    onClick={() => {
+                      setCurrentSessionId(session._id);
+                      setFormDataUpdate({
+                        title: session.title,
+                        tag: session.tag,
+
+                        sessionFile: session.sessionFile,
+                      });
+                      openModalUpdate();
+                    }}
+                    className="inline-block text-gray-500 hover:text-[#349e7a]"
+                  >
+                    <MdOutlineEdit className="text-2xl" />
+                  </Link>
+                </h4>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -50,12 +203,10 @@ const MyActivity = () => {
         {isOpen && (
           <div className="fixed top-0 left-0 z-50 flex justify-center items-center w-full h-screen bg-black bg-opacity-50">
             <div className="relative p-4 w-full max-w-2xl max-h-full">
-              {/* Modal Content */}
               <div className="relative bg-white rounded-lg shadow">
-                {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
                   <h3 className="text-xl font-semibold text-gray-900">
-                    Static Modal
+                    Add Session Here
                   </h3>
                   <button
                     onClick={closeModal}
@@ -78,57 +229,177 @@ const MyActivity = () => {
                   </button>
                 </div>
 
-                {/* Body */}
                 <div className="p-4 space-y-4">
-                  
-<form>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">First name</label>
-            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="John" required />
-        </div>
-        <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Last name</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Doe" required />
-        </div>
-        <div>
-            <label for="company" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Company</label>
-            <input type="text" id="company" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Flowbite" required />
-        </div>  
-        <div>
-            <label for="phone" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phone number</label>
-            <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="123-45-678" pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}" required />
-        </div>
-        <div>
-            <label for="website" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Website URL</label>
-            <input type="url" id="website" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="flowbite.com" required />
-        </div>
-        <div>
-            <label for="visitors" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Unique visitors (per month)</label>
-            <input type="number" id="visitors" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="" required />
-        </div>
-    </div>
-    <div class="mb-6">
-        <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email address</label>
-        <input type="email" id="email" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="john.doe@company.com" required />
-    </div> 
-    <div class="mb-6">
-        <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-        <input type="password" id="password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="•••••••••" required />
-    </div> 
-    <div class="mb-6">
-        <label for="confirm_password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm password</label>
-        <input type="password" id="confirm_password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="•••••••••" required />
-    </div> 
-    <div class="flex items-start mb-6">
-        <div class="flex items-center h-5">
-        <input id="remember" type="checkbox" value="" class="w-4 h-4 border border-gray-300 rounded-sm bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800" required />
-        </div>
-        <label for="remember" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">I agree with the <a href="#" class="text-blue-600 hover:underline dark:text-blue-500">terms and conditions</a>.</label>
-    </div>
-    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
-</form>
+                  <form
+                    onSubmit={handleSubmit}
+                    encType="multipart/form-data"
+                    className="p-4"
+                  >
+                    <div class="mb-6">
+                      <label
+                        for="title"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Session title
+                      </label>
+                      <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        required
+                      />
+                    </div>
 
+                    <div class="mb-6">
+                      <label
+                        for="tags"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Tags
+                      </label>
+                      <input
+                        type="text"
+                        id="tag"
+                        name="tag"
+                        value={formData.tag}
+                        onChange={handleChange}
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                    <div className="mb-6">
+                      <label
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                        id="sessionFile"
+                      >
+                        sessionFile
+                      </label>
+                      <input
+                        className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
+                        type="file"
+                        name="sessionFile"
+                        accept=".json,application/json"
+                        onChange={handleChange}
+                      />
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+                        Session.json
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      class="text-white bg-[#349e7a] hover:bg-[#349e7a] focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    >
+                      Add
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {isOpenUpdate && (
+          <div className="fixed top-0 left-0 z-50 flex justify-center items-center w-full h-screen bg-black bg-opacity-50">
+            <div className="relative p-4 w-full max-w-2xl max-h-full">
+              <div className="relative bg-white rounded-lg shadow">
+                <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Add Session Here
+                  </h3>
+                  <button
+                    onClick={closeModalUpdate}
+                    className="text-gray-400 hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 flex justify-center items-center"
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 14 14"
+                    >
+                      <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M1 1l6 6m0 0l6 6M7 7l6-6M7 7L1 13"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  <form
+                    onSubmit={handleSubmitUpdate}
+                    encType="multipart/form-data"
+                    className="p-4"
+                  >
+                    <div class="mb-6">
+                      <label
+                        for="title"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Session title
+                      </label>
+                      <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        value={formDataUpdate.title}
+                        onChange={handleChangesUpdate}
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div class="mb-6">
+                      <label
+                        for="tags"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Tags
+                      </label>
+                      <input
+                        type="text"
+                        id="tag"
+                        name="tag"
+                        value={formDataUpdate.tag}
+                        onChange={handleChangesUpdate}
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                    <div className="mb-6">
+                      <label
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                        id="sessionFile"
+                      >
+                        sessionFile
+                      </label>
+                      <input
+                        className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
+                        type="file"
+                        name="sessionFile"
+                        accept=".json,application/json"
+                        onChange={handleChangesUpdate}
+                      />
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+                        Session.json
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      class="text-white bg-[#349e7a] hover:bg-[#349e7a] focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    >
+                      Add
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>

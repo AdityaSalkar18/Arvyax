@@ -18,7 +18,7 @@ function App() {
       <Route path="/register" element={<Register/>} />
 
     {user &&   <Route path="/home" element={<Home/>} />}
-       {user &&  <Route path="/myactivity" element={<MyActivity/>} />}
+        <Route path="/myactivity" element={<MyActivity/>} />
    
     </Routes>
     </BrowserRouter>

@@ -8,17 +8,17 @@ const connect = require("./db");
 const userRoutes = require("./routes/user");
 const sessionRoutes = require("./routes/session");
 
-// const cloudinary = require('cloudinary').v2;
+const cloudinary = require('cloudinary').v2;
 
 
 connect();
 
-// cloudinary.config({
+cloudinary.config({
     
-//     cloud_name:  process.env.CN,
-//     api_key: process.env.AK,
-//     api_secret: process.env.AS
-// });
+    cloud_name:  process.env.CN,
+    api_key: process.env.AK,
+    api_secret: process.env.AS
+});
 
 app.use(cors());
 app.use(express.json());

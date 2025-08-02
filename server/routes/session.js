@@ -4,97 +4,140 @@ const auth = require("../middlewares/auth");
 const Session = require("../models/Session");
 const User = require("../models/User");
 const multer = require("multer");
-// const { CloudinaryStorage } = require("multer-storage-cloudinary");
-// const cloudinary = require("cloudinary").v2;
-// const path = require("path");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
+const path = require("path");
 
-// // Multer configuration with Cloudinary storage
-// const Storage = new CloudinaryStorage({
-//   cloudinary: cloudinary,
-//   params: {
-//     folder: "uploads",
-//     resource_type: "raw", // Required for JSON or non-image files
-//     public_id: (req, file) => Date.now() + path.extname(file.originalname),
-//   },
-// });
+const Storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "uploads",
+    resource_type: "raw",
+    public_id: (req, file) => Date.now() + path.extname(file.originalname),
+  },
+});
 
-// const upload = multer({ storage: Storage });
-const upload = multer();
+const upload = multer({ storage: Storage });
+
+router.post(
+  "/my-sessions/save-publish",
+  auth,
+  upload.single("sessionFile"),
+  async (req, res) => {
+    try {
+      // console.log('Received body:', req.body);
+
+      const { title, tag } = req.body;
+
+      const user = await User.findOne({ id: req.user.id });
+      // console.log(user);
+      if (!user) return res.status(404).json({ msg: "User not found" });
+
+      const session = new Session({
+        user: user._id,
+        title,
+        tag,
+        sessionFile: req.file ? req.file.path : undefined,
+        status: "published",
+
+      });
+
+      const savedSession = await session.save();
+      res.status(201).json(savedSession);
+    } catch (error) {
+      console.error("Error saving session:", error.message);
+      res.status(500).json({ error: "Error saving session" });
+    }
+  }
+);
 
 
-router.post("/", auth, upload.none(), async (req, res) => {
+
+router.post(
+  "/my-sessions/save-draft",
+  auth,
+  upload.single("sessionFile"),
+  async (req, res) => {
+    try {
+      // console.log('Received body:', req.body);
+
+      const { title, tag } = req.body;
+
+      const user = await User.findOne({ id: req.user.id });
+      // console.log(user);
+      if (!user) return res.status(404).json({ msg: "User not found" });
+
+      const session = new Session({
+        user: user._id,
+        title,
+        tag,
+        sessionFile: req.file ? req.file.path : undefined,
+      });
+
+      const savedSession = await session.save();
+      res.status(201).json(savedSession);
+    } catch (error) {
+      console.error("Error saving session:", error.message);
+      res.status(500).json({ error: "Error saving session" });
+    }
+  }
+);
+
+router.get("/sessions", async (req, res) => {
   try {
-    // console.log('Received body:', req.body); 
-
-    const { title, tag, status } = req.body;
-
-    const user = await User.findOne({ id: req.user._id });
-    // console.log(user);
-    if (!user) return res.status(404).json({ msg: "User not found" });
-
-    const session = new Session({
-      user: user._id,
-      title,
-      tag,
-      status,
-    });
-
-    const savedSession = await session.save();
-    res.status(201).json(savedSession);
-    
-  } catch (error) {
-    console.error("Error saving session:", error.message);
-    res.status(500).json({ error: "Error saving session" });
+    const sessions = await Session.find({ status: "published" });
+    res.status(200).json(sessions);
+  } catch (err) {
+    res.status(500).json({ error: "Could not fetch public sessions" });
   }
 });
 
-// router.post('/publish', auth, uploadJSON.single('jsonFile'), async (req, res) => {
-//   try {
-//     const { title, tags } = req.body;
-//     const jsonFileUrl = req.file ? req.file.path : '';
+router.get("/my-sessions", auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
 
-//     const session = new Session({
-//       user: req.user._id,
-//       title,
-//       tags: tags.split(',').map(t => t.trim()),
-//       jsonFileUrl,
-//       status: 'published'
-//     });
+    const sessions = await Session.find({ user: userId });
 
-//     await session.save();
-//     res.status(201).json(session);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: 'Could not publish session' });
-//   }
-// });
+    res.status(200).json(sessions);
+  } catch (err) {
+    console.error("Error fetching user sessions:", err.message);
+    res.status(500).json({ error: "Failed to fetch your sessions" });
+  }
+});
 
-// router.get('/sessions', async (req, res) => {
-//   try {
-//     const sessions = await Session.find({ status: 'published' });
-//     res.status(200).json(sessions);
-//   } catch (err) {
-//     res.status(500).json({ error: 'Could not fetch public sessions' });
-//   }
-// });
 
-// router.get('/mysessions', auth, async (req, res) => {
-//   try {
-//     const sessions = await Session.find({ user: req.user._id });
-//     res.status(200).json(sessions);
-//   } catch (err) {
-//     res.status(500).json({ error: 'Could not fetch your sessions' });
-//   }
-// });
 
-// router.get('/my-sessions/:id', auth, async (req, res) => {
-//   try {
-//     const session = await Session.findOne({ _id: req.params.id, user: req.user._id });
-//     if (!session) return res.status(404).json({ error: 'Session not found' });
-//     res.status(200).json(session);
-//   } catch (err) {
-//     res.status(500).json({ error: 'Could not fetch session' });
-//   }
-// });
+router.patch(
+  "/my-sessions/:id",
+  auth,
+  upload.single("sessionFile"),
+  async (req, res) => {
+    try {
+      const { title, tag } = req.body;
+      const sessionId = req.params.id;
+
+      const user = await User.findById(req.user._id);
+      if (!user) return res.status(404).json({ msg: "User not found" });
+
+      const session = await Session.findOne({ _id: sessionId, user: user._id });
+      if (!session)
+        return res
+          .status(404)
+          .json({ msg: "Session not found or unauthorized" });
+
+      if (title) session.title = title;
+      if (tag) session.tag = tag;
+      if (req.file) session.sessionFile = req.file.path;
+
+      session.status = "published";
+
+      const updatedSession = await session.save();
+      res.status(200).json(updatedSession);
+    } catch (error) {
+      console.error("Error updating session:", error.message);
+      res.status(500).json({ error: "Error updating session" });
+    }
+  }
+);
 
 module.exports = router;

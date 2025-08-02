@@ -6,7 +6,6 @@ const sessionSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-
   title: {
     type: String,
     required: true,
@@ -15,10 +14,10 @@ const sessionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // sessionFile: {
-  //   type: String,
-  //   required: true,
-  // },
+  sessionFile: {
+    type: String,
+    required: true,
+  },
   status: {
     type: String,
     default: "draft",
