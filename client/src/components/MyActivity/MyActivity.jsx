@@ -172,6 +172,12 @@ const MyActivity = () => {
                 <h5 className="mb-2 text-2xl font-bold tracking-tight text-gray-700">
                   {session.title || "Untitled Session"}
                 </h5>
+                <span class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-1.5 rounded-lg dark:bg-green-900 dark:text-green-300">
+                  
+                  {session.status || "No status provided."}
+
+                </span>
+                
                 <p className="mb-3 font-normal text-gray-500">
                   {session.tag || "No tag provided."}
                 </p>
